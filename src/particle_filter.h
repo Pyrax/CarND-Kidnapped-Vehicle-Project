@@ -22,6 +22,18 @@ struct Particle {
   std::vector<int> associations;
   std::vector<double> sense_x;
   std::vector<double> sense_y;
+
+  // default ctor without arguments
+  Particle()
+    : id(-1), x(0.0), y(0.0), theta(0.0), weight(0.0)
+    , associations(std::vector<int>{}), sense_x(std::vector<double>{}), sense_y(std::vector<double>{})
+    {}
+
+  // ctor for creating new particles with initialized values
+  Particle(int id, double x, double y, double theta, double weight)
+    : id(id), x(x), y(y), theta(theta), weight(weight)
+    , associations(std::vector<int>{}), sense_x(std::vector<double>{}), sense_y(std::vector<double>{})
+    {}
 };
 
 

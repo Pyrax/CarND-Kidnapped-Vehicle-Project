@@ -20,6 +20,8 @@
 
 using std::string;
 using std::vector;
+using std::normal_distribution;
+using std::default_random_engine;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
   /**
@@ -30,27 +32,16 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    * NOTE: Consult particle_filter.h for more information about this method 
    *   (and others in this file).
    */
-  num_particles = 1000;
+  this->num_particles = 1000;
 
-  std::default_random_engine gen{};
-  std::normal_distribution<double> dist_x{x, std[0]};
-  std::normal_distribution<double> dist_y{y, std[1]};
-  std::normal_distribution<double> dist_theta{theta, std[2]};
+  default_random_engine gen{};
+  normal_distribution<> dist_x{x, std[0]};
+  normal_distribution<> dist_y{y, std[1]};
+  normal_distribution<> dist_theta{theta, std[2]};
 
-  this->particles.resize(static_cast<unsigned long>(num_particles));
-  for (int i = 0; i < num_particles; ++i) {
-    const Particle newParticle {
-      .id = i,
-      .weight = 1.0,
-
-      .x = dist_x(gen),
-      .y = dist_y(gen),
-      .theta = dist_theta(gen),
-
-      .associations = vector<int>(),
-      .sense_x = vector<double>(),
-      .sense_y = vector<double>(),
-    };
+  this->particles.resize(static_cast<unsigned long>(this->num_particles));
+  for (int i = 0; i < this->num_particles; ++i) {
+    const Particle newParticle {i, dist_x(gen), dist_y(gen), dist_theta(gen), 1.0};
     this->particles.push_back(newParticle);
   }
 
@@ -60,13 +51,34 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 void ParticleFilter::prediction(double delta_t, double std_pos[], 
                                 double velocity, double yaw_rate) {
   /**
-   * TODO: Add measurements to each particle and add random Gaussian noise.
+   * Add measurements to each particle and add random Gaussian noise.
    * NOTE: When adding noise you may find std::normal_distribution 
    *   and std::default_random_engine useful.
    *  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
    *  http://www.cplusplus.com/reference/random/default_random_engine/
    */
+  default_random_engine gen{};
 
+  // predict each particle's new state using bicycle motion model
+  for (int i = 0; i < this->num_particles; ++i) {
+    Particle &current = this->particles[i];
+
+    double v_to_theta = velocity / yaw_rate;
+
+    const double theta0 = current.theta;
+    const double new_x = current.x + (v_to_theta * (sin(theta0 + yaw_rate * delta_t) - sin(theta0)));
+    const double new_y = current.y + (v_to_theta * (cos(theta0) - cos(theta0 + yaw_rate * delta_t)));
+    const double new_theta = theta0 + yaw_rate * delta_t;
+
+    // add gaussian noise
+    normal_distribution<> noisy_x{new_x, std_pos[0]};
+    normal_distribution<> noisy_y{new_y, std_pos[1]};
+    normal_distribution<> noisy_theta{new_theta, std_pos[2]};
+
+    current.x = noisy_x(gen);
+    current.y = noisy_y(gen);
+    current.theta = noisy_theta(gen);
+  }
 }
 
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, 
@@ -79,7 +91,6 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    *   probably find it useful to implement this method and use it as a helper 
    *   during the updateWeights phase.
    */
-
 }
 
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
