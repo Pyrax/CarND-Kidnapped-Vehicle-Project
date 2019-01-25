@@ -23,15 +23,38 @@ using std::vector;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
   /**
-   * TODO: Set the number of particles. Initialize all particles to 
+   * Set the number of particles. Initialize all particles to
    *   first position (based on estimates of x, y, theta and their uncertainties
    *   from GPS) and all weights to 1. 
-   * TODO: Add random Gaussian noise to each particle.
+   * Add random Gaussian noise to each particle.
    * NOTE: Consult particle_filter.h for more information about this method 
    *   (and others in this file).
    */
-  num_particles = 0;  // TODO: Set the number of particles
+  num_particles = 1000;
 
+  std::default_random_engine gen{};
+  std::normal_distribution<double> dist_x{x, std[0]};
+  std::normal_distribution<double> dist_y{y, std[1]};
+  std::normal_distribution<double> dist_theta{theta, std[2]};
+
+  this->particles.resize(static_cast<unsigned long>(num_particles));
+  for (int i = 0; i < num_particles; ++i) {
+    const Particle newParticle {
+      .id = i,
+      .weight = 1.0,
+
+      .x = dist_x(gen),
+      .y = dist_y(gen),
+      .theta = dist_theta(gen),
+
+      .associations = vector<int>(),
+      .sense_x = vector<double>(),
+      .sense_y = vector<double>(),
+    };
+    this->particles.push_back(newParticle);
+  }
+
+  this->is_initialized = true;
 }
 
 void ParticleFilter::prediction(double delta_t, double std_pos[], 
