@@ -21,6 +21,8 @@
 using std::string;
 using std::vector;
 using std::normal_distribution;
+using std::uniform_int_distribution;
+using std::uniform_real_distribution;
 using std::default_random_engine;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
@@ -168,10 +170,35 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 void ParticleFilter::resample() {
   /**
-   * TODO: Resample particles with replacement with probability proportional 
+   * Resample particles with replacement with probability proportional
    *   to their weight.
    */
+  default_random_engine gen{};
+  uniform_int_distribution<> dist_index{0, this->num_particles};
 
+  int index = dist_index(gen);
+  double beta = 0.0;
+
+  vector<Particle> resampled_particles {};
+
+  for (int i = 0; i < this->num_particles; ++i) {
+    double max_weight = 0.0;
+    for (auto p : this->particles) {
+      if (p.weight > max_weight) {
+        max_weight = p.weight;
+      }
+    }
+
+    uniform_real_distribution<> dist_beta{0, max_weight};
+    beta += dist_beta(gen);
+
+    double p_weight = this->particles[index].weight;
+    while (p_weight < beta) {
+      beta -= p_weight;
+      index = (index + 1) % this->num_particles;
+    }
+    resampled_particles.push_back(this->particles[index]);
+  }
 }
 
 void ParticleFilter::SetAssociations(Particle& particle, 
