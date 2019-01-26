@@ -39,7 +39,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   normal_distribution<> dist_y{y, std[1]};
   normal_distribution<> dist_theta{theta, std[2]};
 
-  this->particles.resize(static_cast<unsigned long>(this->num_particles));
+  this->particles.reserve(static_cast<unsigned long>(this->num_particles));
   for (int i = 0; i < this->num_particles; ++i) {
     const Particle newParticle {i, dist_x(gen), dist_y(gen), dist_theta(gen), 1.0};
     this->particles.push_back(newParticle);
@@ -95,7 +95,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
     double nearest_dist = 9999999.0;
 
     for (auto pred : predicted) {
-      double current_dist = dist(nearest_mark->x, nearest_mark->y, obs.x, obs.y);
+      double current_dist = dist(pred.x, pred.y, obs.x, obs.y);
       if (current_dist < nearest_dist) {
         nearest_mark = &pred;
         nearest_dist = current_dist;
@@ -137,7 +137,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
     // Convert observations from car coordinates to map coordinates
     vector<LandmarkObs> t_observations {};
-    t_observations.resize(observations.size());
+    t_observations.reserve(observations.size());
     for (auto obs : observations) {
       t_observations.push_back(LandmarkObs{
         obs.id,
