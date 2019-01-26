@@ -24,6 +24,7 @@ using std::normal_distribution;
 using std::uniform_int_distribution;
 using std::uniform_real_distribution;
 using std::default_random_engine;
+using std::numeric_limits;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
   /**
@@ -90,22 +91,20 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    *   particular landmark.
    */
   // Nearest Neighbour search
-  for (auto obs : observations) {
-    LandmarkObs *nearest_mark = nullptr;
-    double nearest_dist = 9999999.0;
+  for (auto &obs : observations) {
+    int nearest_id = -1;
+    double nearest_dist = numeric_limits<double>::max();
 
     for (auto pred : predicted) {
       double current_dist = dist(pred.x, pred.y, obs.x, obs.y);
       if (current_dist < nearest_dist) {
-        nearest_mark = &pred;
+        nearest_id = pred.id;
         nearest_dist = current_dist;
       }
     }
 
-    if (nearest_mark != nullptr) {
-      // Assign ID of nearest landmark from the map to each observation
-      obs.id = nearest_mark->id;
-    }
+    // Assign ID of nearest landmark from the map to each observation
+    obs.id = nearest_id;
   }
 }
 
@@ -151,18 +150,18 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
     double final_weight = 1.0;
     for (auto obs : t_observations) {
-      double mark_x = 0.0;
-      double mark_y = 0.0;
+      double pred_x = 0.0;
+      double pred_y = 0.0;
 
-      for (auto map_landmark : map_landmarks.landmark_list) {
-        if (map_landmark.id_i == obs.id) {
-          mark_x = map_landmark.x_f;
-          mark_y = map_landmark.y_f;
+      for (auto pred : predictions) {
+        if (pred.id == obs.id) {
+          pred_x = pred.x;
+          pred_y = pred.y;
           break;
         }
       }
 
-      final_weight *= multivariate_gaussian(std_landmark[0], std_landmark[1], obs.x, obs.y, mark_x, mark_y);
+      final_weight *= multivariate_gaussian(std_landmark[0], std_landmark[1], obs.x, obs.y, pred_x, pred_y);
     }
     this->particles[i].weight = final_weight;
   }
@@ -174,7 +173,7 @@ void ParticleFilter::resample() {
    *   to their weight.
    */
   default_random_engine gen{};
-  uniform_int_distribution<> dist_index{0, this->num_particles};
+  uniform_int_distribution<> dist_index{0, this->num_particles-1};
 
   int index = dist_index(gen);
   double beta = 0.0;
@@ -199,6 +198,8 @@ void ParticleFilter::resample() {
     }
     resampled_particles.push_back(this->particles[index]);
   }
+
+  this->particles = resampled_particles;
 }
 
 void ParticleFilter::SetAssociations(Particle& particle, 
