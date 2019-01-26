@@ -131,7 +131,10 @@ class ParticleFilter {
   bool is_initialized;
   
   // Vector of weights of all particles
-  std::vector<double> weights; 
+  std::vector<double> weights;
+
+  // Get highest weight of all particles
+  const double getMaxParticleWeight() const;
 };
 
 #endif  // PARTICLE_FILTER_H_

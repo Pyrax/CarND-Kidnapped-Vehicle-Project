@@ -175,25 +175,24 @@ void ParticleFilter::resample() {
   default_random_engine gen{};
   uniform_int_distribution<> dist_index{0, this->num_particles-1};
 
+  this->weights = vector<double> {};
+  this->weights.reserve(static_cast<unsigned long>(this->num_particles));
+  for (int i = 0; i < this->num_particles; ++i) {
+    this->weights.push_back(this->particles[i].weight);
+  }
+
   int index = dist_index(gen);
   double beta = 0.0;
+  double max_weight = this->getMaxParticleWeight();
 
+  uniform_real_distribution<> dist_beta{0, 2.0 * max_weight};
   vector<Particle> resampled_particles {};
 
   for (int i = 0; i < this->num_particles; ++i) {
-    double max_weight = 0.0;
-    for (auto p : this->particles) {
-      if (p.weight > max_weight) {
-        max_weight = p.weight;
-      }
-    }
-
-    uniform_real_distribution<> dist_beta{0, max_weight};
     beta += dist_beta(gen);
 
-    double p_weight = this->particles[index].weight;
-    while (p_weight < beta) {
-      beta -= p_weight;
+    while (this->weights[index] < beta) {
+      beta -= this->weights[index];
       index = (index + 1) % this->num_particles;
     }
     resampled_particles.push_back(this->particles[index]);
@@ -239,4 +238,15 @@ string ParticleFilter::getSenseCoord(Particle best, string coord) {
   string s = ss.str();
   s = s.substr(0, s.length()-1);  // get rid of the trailing space
   return s;
+}
+
+const double ParticleFilter::getMaxParticleWeight() const {
+  double max_weight = 0.0;
+
+  for (const auto &p : this->particles) {
+    if (p.weight > max_weight) {
+      max_weight = p.weight;
+    }
+  }
+  return max_weight;
 }
