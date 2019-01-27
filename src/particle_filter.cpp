@@ -23,7 +23,6 @@ using std::vector;
 using std::normal_distribution;
 using std::uniform_int_distribution;
 using std::uniform_real_distribution;
-using std::default_random_engine;
 using std::numeric_limits;
 
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
@@ -33,16 +32,21 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    *   from GPS) and all weights to 1. 
    * Add random Gaussian noise to each particle.
    */
-  this->num_particles = 1000;
+  this->num_particles = 100;
 
-  default_random_engine gen{};
   normal_distribution<> dist_x{x, std[0]};
   normal_distribution<> dist_y{y, std[1]};
   normal_distribution<> dist_theta{theta, std[2]};
 
   this->particles.reserve(static_cast<unsigned long>(this->num_particles));
   for (int i = 0; i < this->num_particles; ++i) {
-    const Particle newParticle {i, dist_x(gen), dist_y(gen), dist_theta(gen), 1.0};
+    const Particle newParticle {
+      i,
+      dist_x(this->random_engine),
+      dist_y(this->random_engine),
+      dist_theta(this->random_engine),
+      1.0
+    };
     this->particles.push_back(newParticle);
   }
 
@@ -54,8 +58,6 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
   /**
    * Add measurements to each particle and add random Gaussian noise.
    */
-  default_random_engine gen{};
-
   // Initialize gaussian distribution for noise
   normal_distribution<> noise_x{0, std_pos[0]};
   normal_distribution<> noise_y{0, std_pos[1]};
@@ -77,9 +79,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
     }
 
     // Add gaussian noise
-    p.x += noise_x(gen);
-    p.y += noise_y(gen);
-    p.theta += noise_theta(gen);
+    p.x += noise_x(this->random_engine);
+    p.y += noise_y(this->random_engine);
+    p.theta += noise_theta(this->random_engine);
   }
 }
 
@@ -172,10 +174,9 @@ void ParticleFilter::resample() {
    * Resample particles with replacement with probability proportional
    *   to their weight.
    */
-  default_random_engine gen{};
   uniform_int_distribution<> dist_index{0, this->num_particles-1};
 
-  int index = dist_index(gen);
+  int index = dist_index(this->random_engine);
   double beta = 0.0;
   double max_weight = this->getMaxParticleWeight();
 
@@ -184,7 +185,7 @@ void ParticleFilter::resample() {
 
   // Use resampling wheel algorithm
   for (int i = 0; i < this->num_particles; ++i) {
-    beta += dist_beta(gen);
+    beta += dist_beta(this->random_engine);
 
     while (this->particles[index].weight < beta) {
       beta -= this->particles[index].weight;

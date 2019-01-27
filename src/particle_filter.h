@@ -11,6 +11,7 @@
 
 #include <string>
 #include <vector>
+#include <random>
 #include "helper_functions.h"
 
 struct Particle {
@@ -132,6 +133,8 @@ class ParticleFilter {
 
   // Get highest weight of all particles
   const double getMaxParticleWeight() const;
+
+  std::default_random_engine random_engine {};
 };
 
 #endif  // PARTICLE_FILTER_H_
